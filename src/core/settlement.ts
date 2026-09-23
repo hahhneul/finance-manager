@@ -42,16 +42,45 @@ export function settlementExpense(settlement: Settlement): Krw {
   return settlement.myShare;
 }
 
-/** 아직 돈을 못 받은 정산인가 */
+/**
+ * 실제로 받은 금액.
+ *
+ * receivedAmount 가 없고 receivedDate 만 있으면 전액을 받은 것으로 본다.
+ * (부분 입금을 지원하기 전에 저장된 기록과 호환되게)
+ */
+export function receivedSoFar(settlement: Settlement): Krw {
+  if (!settlement.receivedDate) return 0;
+  return settlement.receivedAmount ?? settlement.reimbursedAmount;
+}
+
+/** 아직 받지 못한 금액 */
+export function outstanding(settlement: Settlement): Krw {
+  return Math.max(0, settlement.reimbursedAmount - receivedSoFar(settlement));
+}
+
+/** 아직 돈을 다 못 받은 정산인가 */
 export function isPending(settlement: Settlement): boolean {
-  return !settlement.receivedDate;
+  return outstanding(settlement) > 0;
 }
 
 /** 아직 못 받은 돈의 합계 ("받을 돈 22,500원" 표시용) */
 export function pendingReceivable(settlements: Settlement[]): Krw {
-  return settlements
-    .filter(isPending)
-    .reduce((sum, s) => sum + s.reimbursedAmount, 0);
+  return settlements.reduce((sum, s) => sum + outstanding(s), 0);
+}
+
+/** 입금을 기록할 때 넣을 값을 만든다 */
+export function applyReceipt(
+  settlement: Settlement,
+  amount: Krw,
+  date: ISODate,
+): Pick<Settlement, 'receivedDate' | 'receivedAmount'> {
+  const total = receivedSoFar(settlement) + amount;
+
+  return {
+    receivedDate: date,
+    // 돌려받을 금액보다 많이 넣을 수는 없다
+    receivedAmount: Math.min(total, settlement.reimbursedAmount),
+  };
 }
 
 /**

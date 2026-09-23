@@ -256,6 +256,32 @@ export function dailyExpenseTotals(ledger: Ledger, month: YearMonth): Map<string
   return byDate;
 }
 
+export interface DailyFlow {
+  income: Krw;
+  expense: Krw;
+}
+
+/**
+ * 달력 뷰용 — 날짜별 수입·지출.
+ *
+ * 지출만 세면 월급 받은 날이 빈 칸처럼 보인다.
+ * 달력은 '그날 돈이 움직였는지'를 훑는 화면이라 수입도 보여야 한다.
+ */
+export function dailyFlows(ledger: Ledger, month: YearMonth): Map<string, DailyFlow> {
+  const byDate = new Map<string, DailyFlow>();
+
+  for (const entry of entriesInMonth(ledger, month)) {
+    const current = byDate.get(entry.date) ?? { income: 0, expense: 0 };
+
+    if (entry.flow === 'income') current.income += entry.amount;
+    else current.expense += entry.amount;
+
+    byDate.set(entry.date, current);
+  }
+
+  return byDate;
+}
+
 // ---------------------------------------------------------------------------
 // 거래 목록 화면
 // ---------------------------------------------------------------------------

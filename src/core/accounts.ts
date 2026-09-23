@@ -1,5 +1,6 @@
 import type { Account, Dec, ID, Krw, Ledger, Trade } from '@/types';
 import { toKrw } from './money';
+import { receivedSoFar } from './settlement';
 
 /**
  * 매매 한 건이 증권계좌 현금에 주는 영향 (원화).
@@ -62,9 +63,9 @@ export function accountBalance(
     if (settlement.payerAccountId === account.id) {
       balance -= settlement.totalAmount;
     }
-    // 정산 계좌에는 내 몫을 뺀 나머지가 들어온다 — 실제로 받은 날이 있을 때만
-    if (settlement.receiverAccountId === account.id && settlement.receivedDate) {
-      balance += settlement.reimbursedAmount;
+    // 정산 계좌에는 **실제로 받은 만큼만** 들어온다 (일부만 받았을 수도 있다)
+    if (settlement.receiverAccountId === account.id) {
+      balance += receivedSoFar(settlement);
     }
   }
 

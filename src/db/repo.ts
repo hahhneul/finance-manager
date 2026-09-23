@@ -6,7 +6,13 @@ import { recomputeHolding, tradeKey } from '@/core/holdings';
 import { computeNetWorth, reconstructSnapshots, toSnapshot } from '@/core/networth';
 import { refreshQuotes, type RefreshResult } from '@/prices/refresh';
 import { createProvider, erApiFxProvider } from '@/prices/registry';
-import { buildSettlement, type SettlementDraft, validateSettlement } from '@/core/settlement';
+import {
+  applyReceipt,
+  buildSettlement,
+  outstanding,
+  type SettlementDraft,
+  validateSettlement,
+} from '@/core/settlement';
 import { applyRules } from '@/core/rules';
 import {
   alreadyRecorded,
@@ -155,9 +161,36 @@ export async function saveSettlement(draft: SettlementDraft): Promise<Settlement
   return insert(db.settlements, data);
 }
 
-/** "정산금 받았음" 표시 */
-export async function markSettlementReceived(id: ID, receivedDate: string) {
-  return patch(db.settlements, id, { receivedDate });
+/**
+ * 정산금 입금을 기록한다.
+ *
+ * 일부만 받아도 되고, 여러 번 나눠 받아도 된다 — 받은 금액이 누적된다.
+ * 받은 돈은 **수입이 아니다**. 내가 빌려준 돈을 돌려받은 것이라
+ * 계좌 잔액만 늘고 수입 통계에는 잡히지 않는다.
+ */
+export async function recordSettlementReceipt(
+  id: ID,
+  amount: Krw,
+  date: string,
+): Promise<Settlement | undefined> {
+  const settlement = await db.settlements.get(id);
+  if (!settlement) throw new Error('정산 기록을 찾을 수 없습니다.');
+
+  if (!Number.isInteger(amount) || amount <= 0) {
+    throw new Error('입금액은 0원보다 큰 정수여야 합니다.');
+  }
+
+  const remaining = outstanding(settlement);
+  if (amount > remaining) {
+    throw new Error(`남은 금액(${remaining.toLocaleString('ko-KR')}원)보다 많이 넣을 수 없습니다.`);
+  }
+
+  return patch(db.settlements, id, applyReceipt(settlement, amount, date));
+}
+
+/** 입금 기록을 되돌린다 (잘못 눌렀을 때) */
+export async function clearSettlementReceipt(id: ID): Promise<Settlement | undefined> {
+  return patch(db.settlements, id, { receivedDate: undefined, receivedAmount: undefined });
 }
 
 // ---------------------------------------------------------------------------

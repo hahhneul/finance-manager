@@ -156,7 +156,7 @@ export function Dashboard() {
 
       {receivable > 0 && (
         <Link
-          to="/transactions"
+          to="/transactions?pending=1"
           className="mt-2 flex min-h-14 items-center gap-3 bg-amber-50 px-4 active:bg-amber-100"
         >
           <Wallet className="size-5 shrink-0 text-amber-600" />
@@ -175,7 +175,7 @@ export function Dashboard() {
         {!ledger ? <Skeleton /> : <ExpenseTrend bars={bars} onSelect={setMonth} />}
       </Card>
 
-      {netWorth && <NetWorthCard breakdown={netWorth} />}
+      {netWorth && <NetWorthCard breakdown={netWorth} receivable={receivable} />}
 
       <Card title="순자산 추이">
         {!snapshots ? <Skeleton /> : <NetWorthTrend snapshots={snapshots} />}

@@ -18,7 +18,14 @@ const INVEST_COLOR = CATEGORICAL[2];
  * 증권계좌 현금은 매수할 때 줄고 그 자리를 주식 평가액이 대신하므로
  * 이중으로 잡히지 않는다.
  */
-export function NetWorthCard({ breakdown }: { breakdown: NetWorthBreakdown }) {
+export function NetWorthCard({
+  breakdown,
+  receivable = 0,
+}: {
+  breakdown: NetWorthBreakdown;
+  /** 아직 못 받은 정산금. 순자산에는 넣지 않되 기준을 밝힌다 */
+  receivable?: number;
+}) {
   return (
     <section className="mt-2 bg-white px-4 py-4">
       <div className="flex items-baseline justify-between">
@@ -73,6 +80,17 @@ export function NetWorthCard({ breakdown }: { breakdown: NetWorthBreakdown }) {
           )}
         </ul>
       </div>
+
+      {/*
+        못 받을 수도 있는 돈이라 순자산에 넣지 않는다.
+        다만 기준을 적지 않으면 "왜 22,500원이 빠졌지?" 하고 헷갈린다.
+      */}
+      {receivable > 0 && (
+        <p className="mt-3 border-t border-slate-100 pt-2.5 text-xs text-slate-500">
+          아직 못 받은 정산금 {formatKrw(receivable)}은 순자산에 넣지 않았습니다. 받으면
+          현금성 자산으로 잡힙니다.
+        </p>
+      )}
     </section>
   );
 }

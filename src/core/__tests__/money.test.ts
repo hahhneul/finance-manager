@@ -68,3 +68,30 @@ describe('환율 표시', () => {
     expect(formatFxRate(1350)).toBe('1,350.00원');
   });
 });
+
+describe('축약 표기 정밀도', () => {
+  it('1만~10만 구간은 소수 첫째 자리를 살린다', () => {
+    // 버림하면 38,000 이 '3만' 이 되어 실제보다 훨씬 적어 보인다
+    expect(formatKrwCompact(38_000)).toBe('3.8만');
+    expect(formatKrwCompact(15_000)).toBe('1.5만');
+    expect(formatKrwCompact(22_500)).toBe('2.3만');
+  });
+
+  it('딱 떨어지면 소수를 붙이지 않는다', () => {
+    expect(formatKrwCompact(30_000)).toBe('3만');
+    expect(formatKrwCompact(50_000)).toBe('5만');
+  });
+
+  it('1만 미만은 그대로', () => {
+    expect(formatKrwCompact(5_500)).toBe('5,500');
+  });
+
+  it('10만 이상은 만 단위로 충분하다', () => {
+    expect(formatKrwCompact(300_000)).toBe('30만');
+    expect(formatKrwCompact(1_234_000)).toBe('123만');
+  });
+
+  it('음수', () => {
+    expect(formatKrwCompact(-38_000)).toBe('-3.8만');
+  });
+});

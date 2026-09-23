@@ -39,17 +39,31 @@ export function formatKrwAbs(value: Krw): string {
 
 /**
  * 좁은 화면용 축약 표기.
- * 1234000 → '123만', 12340000 → '1,234만', 123400000 → '1.2억'
+ *
+ * 만 단위를 버림하면 38,000원이 '3만'이 되어 실제보다 훨씬 적어 보인다.
+ * 그래서 10만원 미만은 소수 첫째 자리를 살린다.
+ *
+ *   5,500 → '5,500'   38,000 → '3.8만'   123,000 → '12만'
+ *   1,234,000 → '123만'   123,400,000 → '1.2억'
  */
 export function formatKrwCompact(value: Krw): string {
   const abs = Math.abs(value);
   const sign = value < 0 ? '-' : '';
+
   if (abs >= 100_000_000) {
     return `${sign}${(abs / 100_000_000).toFixed(1).replace(/\.0$/, '')}억`;
   }
-  if (abs >= 10_000) {
+
+  if (abs >= 100_000) {
+    // 10만원 이상은 만 단위만으로도 크기가 충분히 읽힌다
     return `${sign}${krwFormatter.format(Math.floor(abs / 10_000))}만`;
   }
+
+  if (abs >= 10_000) {
+    // 1만~10만 구간에서 버림하면 오차가 커 보인다 (38,000 → '3만')
+    return `${sign}${(abs / 10_000).toFixed(1).replace(/\.0$/, '')}만`;
+  }
+
   return `${sign}${krwFormatter.format(abs)}`;
 }
 

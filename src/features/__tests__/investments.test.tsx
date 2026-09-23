@@ -68,8 +68,12 @@ describe('투자 화면', () => {
     renderIn(<InvestmentsScreen />);
     await screen.findByText('삼성전자');
 
-    // 데모 시세는 2026-09-20 15:30 (한국 시간) — 종목 3개 + 환율 1개
-    expect(await screen.findAllByText(/기준 9월 20일/)).toHaveLength(4);
+    // 데모 시세는 2026-09-20 15:30 (한국 시간) — 종목 3개 + 환율 1개.
+    // 환율은 따로 읽어오므로 4개가 다 뜰 때까지 기다린다
+    // (findAllByText 는 1개만 찾아도 통과해서 3개로 세는 경우가 있었다)
+    await waitFor(() => {
+      expect(screen.getAllByText(/기준 9월 20일/)).toHaveLength(4);
+    });
   });
 
   it('달러 종목이 있으면 환율을 보여준다', async () => {

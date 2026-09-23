@@ -4,6 +4,8 @@ import { BottomSheet } from '@/components/BottomSheet';
 import { Segment } from '@/components/Segment';
 import { accountBalance, accountBalanceView } from '@/core/accounts';
 import { formatKrw } from '@/core/money';
+import { parseKrwInput } from '@/core/amountInput';
+import { AmountField } from '@/components/AmountField';
 import { db } from '@/db/schema';
 import { insert, patch } from '@/db/repo';
 import { useAccounts, useLedger } from '@/hooks/useData';
@@ -138,12 +140,18 @@ function AccountSheet({
     setConfirmDelete(false);
   }
 
-  const amount = Number(initialBalance.replace(/[^0-9]/g, '')) || 0;
+  const parsedBalance = parseKrwInput(initialBalance);
+  const amount = parsedBalance.value;
 
   async function save() {
     setError(null);
     if (!name.trim()) {
       setError('계좌 이름을 입력해 주세요.');
+      return;
+    }
+    // 초기 잔액은 0 도 정상이지만, 해석이 안 되는 글자는 막는다
+    if (parsedBalance.error) {
+      setError(parsedBalance.error);
       return;
     }
 
@@ -209,22 +217,7 @@ function AccountSheet({
           )}
         </div>
 
-        <label className="block">
-          <span className="text-xs text-slate-500">초기 잔액</span>
-          <input
-            type="text"
-            inputMode="numeric"
-            value={initialBalance}
-            onChange={(e) => setInitialBalance(e.target.value.replace(/[^0-9]/g, ''))}
-            placeholder="0"
-            className="mt-1 min-h-12 w-full rounded-lg border border-slate-200 px-3 text-right"
-          />
-          {amount > 0 && (
-            <span className="mt-1 block text-right text-xs text-slate-500">
-              {formatKrw(amount)}
-            </span>
-          )}
-        </label>
+        <AmountField label="초기 잔액" value={initialBalance} onChange={setInitialBalance} />
 
         {account && (
           <label className="flex min-h-11 items-center gap-2 text-sm text-slate-700">

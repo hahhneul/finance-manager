@@ -137,3 +137,29 @@ describe('신용카드 표시', () => {
     expect(view.displayAmount).toBe(2_194_200);
   });
 });
+
+describe('부분 입금이 잔액에 반영된다', () => {
+  const kakao = demoAccounts.find((a) => a.id === 'acc-kakao')!;
+
+  it('일부만 받았으면 그만큼만 들어온다', () => {
+    const partial = {
+      ...demoLedger.settlements[2], // 치킨 모임 22,500
+      receivedDate: '2026-09-23',
+      receivedAmount: 10_000,
+    };
+    const ledger = { transactions: [], settlements: [partial] };
+
+    expect(accountBalance(kakao, ledger, [], options)).toBe(200_000 + 10_000);
+  });
+
+  it('다 받으면 전액 들어온다', () => {
+    const full = {
+      ...demoLedger.settlements[2],
+      receivedDate: '2026-09-23',
+      receivedAmount: 22_500,
+    };
+    const ledger = { transactions: [], settlements: [full] };
+
+    expect(accountBalance(kakao, ledger, [], options)).toBe(200_000 + 22_500);
+  });
+});

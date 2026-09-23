@@ -1,5 +1,14 @@
 import { describe, expect, it } from 'vitest';
-import { buildSettlement, pendingReceivable, splitBill, validateSettlement } from '../settlement';
+import {
+  applyReceipt,
+  buildSettlement,
+  isPending,
+  outstanding,
+  pendingReceivable,
+  receivedSoFar,
+  splitBill,
+  validateSettlement,
+} from '../settlement';
 import { demoSettlements } from '@/demo/demoData';
 import { expectedPendingReceivable, expectedSettlements } from '@/demo/expected';
 
@@ -110,5 +119,55 @@ describe('validateSettlement', () => {
     expect(validateSettlement({
       totalAmount: 120_000, myShare: 30_000, reimbursedAmount: 90_000, headcount: 4,
     })).toEqual([]);
+  });
+});
+
+describe('정산금 입금 (부분 입금 포함)', () => {
+  const base = demoSettlements[2]; // 치킨 모임: 돌려받을 22,500, 아직 못 받음
+
+  it('아직 못 받았으면 받은 금액 0, 남은 금액 전부', () => {
+    expect(receivedSoFar(base)).toBe(0);
+    expect(outstanding(base)).toBe(22_500);
+    expect(isPending(base)).toBe(true);
+  });
+
+  it('일부만 받으면 그만큼만 쌓인다', () => {
+    const after = { ...base, ...applyReceipt(base, 10_000, '2026-09-23') };
+
+    expect(receivedSoFar(after)).toBe(10_000);
+    expect(outstanding(after)).toBe(12_500);
+    // 아직 다 못 받았으므로 여전히 미수
+    expect(isPending(after)).toBe(true);
+  });
+
+  it('나눠 받으면 누적된다', () => {
+    let s = { ...base, ...applyReceipt(base, 10_000, '2026-09-23') };
+    s = { ...s, ...applyReceipt(s, 12_500, '2026-09-25') };
+
+    expect(receivedSoFar(s)).toBe(22_500);
+    expect(outstanding(s)).toBe(0);
+    expect(isPending(s)).toBe(false);
+  });
+
+  it('돌려받을 금액보다 많이 넣어도 넘치지 않는다', () => {
+    const after = { ...base, ...applyReceipt(base, 99_999, '2026-09-23') };
+    expect(receivedSoFar(after)).toBe(22_500);
+    expect(outstanding(after)).toBe(0);
+  });
+
+  it('receivedAmount 가 없던 옛 기록은 전액 받은 것으로 본다', () => {
+    // 부분 입금을 지원하기 전에 저장된 형태
+    const old = demoSettlements[0]; // 팀 회식: receivedDate 있고 receivedAmount 없음
+    expect(old.receivedAmount).toBeUndefined();
+    expect(receivedSoFar(old)).toBe(90_000);
+    expect(outstanding(old)).toBe(0);
+  });
+
+  it('미수금 합계는 남은 금액만 센다', () => {
+    const partial = { ...base, ...applyReceipt(base, 10_000, '2026-09-23') };
+    const list = [demoSettlements[0], demoSettlements[1], partial];
+
+    // 팀 회식·여행은 다 받았고, 치킨은 12,500 남음
+    expect(pendingReceivable(list)).toBe(12_500);
   });
 });

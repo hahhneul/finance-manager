@@ -140,6 +140,12 @@ export interface Settlement extends Entity {
   reimbursedAmount: Krw;
   /** 실제로 돈이 들어온 날. 비어 있으면 "아직 못 받음"이고 잔액에 반영하지 않는다 */
   receivedDate?: ISODate;
+  /**
+   * 실제로 받은 금액. 일부만 받은 경우를 위해 둔다.
+   * 비어 있고 receivedDate 가 있으면 전액(reimbursedAmount)을 받은 것으로 본다
+   * — 이 필드가 없던 시절에 저장된 기록과 호환되게 하려는 것이다.
+   */
+  receivedAmount?: Krw;
   memo: string;
   tags: string[];
 }

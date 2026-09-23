@@ -2,6 +2,8 @@ import { useEffect, useState } from 'react';
 import { Trash2 } from 'lucide-react';
 import { BottomSheet } from '@/components/BottomSheet';
 import { formatKrw } from '@/core/money';
+import { parseKrwInput, validateAmount } from '@/core/amountInput';
+import { AmountField } from '@/components/AmountField';
 import type { BudgetUsage } from '@/core/budget';
 import type { Category, ID } from '@/types';
 
@@ -54,7 +56,7 @@ export function BudgetEditSheet({
     (c) => c.id === usage?.categoryId || !existingCategoryIds.includes(c.id),
   );
 
-  const numericAmount = Number(amount.replace(/[^0-9]/g, '')) || 0;
+  const numericAmount = parseKrwInput(amount).value;
 
   async function submit() {
     setError(null);
@@ -63,13 +65,14 @@ export function BudgetEditSheet({
       setError('카테고리를 골라 주세요.');
       return;
     }
-    if (numericAmount <= 0) {
-      setError('예산은 0원보다 커야 합니다.');
+    const checked = validateAmount(amount);
+    if (checked.error) {
+      setError(checked.error);
       return;
     }
 
     try {
-      await onSave(categoryId, numericAmount);
+      await onSave(categoryId, checked.value);
     } catch (e) {
       setError(e instanceof Error ? e.message : String(e));
     }
@@ -110,22 +113,11 @@ export function BudgetEditSheet({
           </div>
         )}
 
-        <label className="block">
-          <span className="text-xs text-slate-500">{month.slice(5, 7).replace(/^0/, '')}월 예산</span>
-          <input
-            type="text"
-            inputMode="numeric"
-            value={amount}
-            onChange={(e) => setAmount(e.target.value.replace(/[^0-9]/g, ''))}
-            placeholder="0"
-            className="mt-1 min-h-12 w-full rounded-lg border border-slate-200 px-3 text-right"
-          />
-          {numericAmount > 0 && (
-            <span className="mt-1 block text-right text-xs text-slate-500">
-              {formatKrw(numericAmount)}
-            </span>
-          )}
-        </label>
+        <AmountField
+          label={`${month.slice(5, 7).replace(/^0/, '')}월 예산`}
+          value={amount}
+          onChange={setAmount}
+        />
 
         {/* 자주 쓰는 금액을 한 번에 */}
         <div className="grid grid-cols-4 gap-1.5">

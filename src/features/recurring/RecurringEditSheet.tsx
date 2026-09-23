@@ -4,7 +4,8 @@ import { BottomSheet } from '@/components/BottomSheet';
 import { Segment } from '@/components/Segment';
 import { CategoryPicker } from '@/features/input/CategoryGrid';
 import { AccountPicker } from '@/features/input/pickers';
-import { formatKrw } from '@/core/money';
+import { validateAmount } from '@/core/amountInput';
+import { AmountField } from '@/components/AmountField';
 import { categoryPath } from '@/core/recent';
 import { todayISO } from '@/core/date';
 import { deleteRecurring, saveRecurring, updateRecurring } from '@/db/repo';
@@ -60,19 +61,19 @@ export function RecurringEditSheet({
     setSheet(null);
   }
 
-  const numericAmount = Number(amount.replace(/[^0-9]/g, '')) || 0;
   const account = accounts.find((a) => a.id === accountId);
   const category = categories.find((c) => c.id === categoryId);
 
   async function save() {
     setError(null);
     if (!name.trim()) return setError('이름을 입력해 주세요.');
-    if (numericAmount <= 0) return setError('금액은 0원보다 커야 합니다.');
+    const checked = validateAmount(amount);
+    if (checked.error) return setError(checked.error);
     if (!accountId) return setError('계좌를 골라 주세요.');
 
     const template = {
       type: 'expense' as const,
-      amount: numericAmount,
+      amount: checked.value,
       accountId,
       categoryId,
       memo: name.trim(),
@@ -117,22 +118,7 @@ export function RecurringEditSheet({
           />
         </label>
 
-        <label className="block">
-          <span className="text-xs text-slate-500">금액</span>
-          <input
-            type="text"
-            inputMode="numeric"
-            value={amount}
-            onChange={(e) => setAmount(e.target.value.replace(/[^0-9]/g, ''))}
-            placeholder="0"
-            className="mt-1 min-h-12 w-full rounded-lg border border-slate-200 px-3 text-right"
-          />
-          {numericAmount > 0 && (
-            <span className="mt-1 block text-right text-xs text-slate-500">
-              {formatKrw(numericAmount)}
-            </span>
-          )}
-        </label>
+        <AmountField label="금액" value={amount} onChange={setAmount} />
 
         <div>
           <p className="mb-1.5 text-xs text-slate-500">주기</p>

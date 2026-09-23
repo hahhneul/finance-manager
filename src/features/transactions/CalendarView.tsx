@@ -7,7 +7,7 @@ import {
   type CalendarCell,
 } from '@/core/calendar';
 import { intensityColor } from '@/core/chartColors';
-import { dailyExpenseTotals, groupRowsByDate, ledgerRows } from '@/core/transactions';
+import { dailyFlows, groupRowsByDate, ledgerRows, type DailyFlow } from '@/core/transactions';
 import { formatKoreanDate, todayISO, weekdayKo } from '@/core/date';
 import { formatKrw, formatKrwCompact } from '@/core/money';
 import { categoryPath } from '@/core/recent';
@@ -36,10 +36,13 @@ export function CalendarView({
 
   const weeks = useMemo(() => buildMonthGrid(month, todayISO()), [month]);
 
-  const byDate = useMemo(() => dailyExpenseTotals(ledger, month), [ledger, month]);
+  const byDate = useMemo(() => dailyFlows(ledger, month), [ledger, month]);
 
-  // 농도 기준은 이번 달 지출이 있는 날들만으로 잡는다
-  const cutoffs = useMemo(() => expenseCutoffs([...byDate.values()]), [byDate]);
+  // 칸 색의 농도는 지출 기준으로만 잡는다 (수입은 글자로 구분한다)
+  const cutoffs = useMemo(
+    () => expenseCutoffs([...byDate.values()].map((f) => f.expense)),
+    [byDate],
+  );
 
   const dayRows = useMemo(() => {
     if (!selected) return null;
@@ -69,8 +72,8 @@ export function CalendarView({
               <DayCell
                 key={cell.date}
                 cell={cell}
-                amount={byDate.get(cell.date) ?? 0}
-                intensity={intensityOf(byDate.get(cell.date) ?? 0, cutoffs)}
+                flow={byDate.get(cell.date) ?? { income: 0, expense: 0 }}
+                intensity={intensityOf(byDate.get(cell.date)?.expense ?? 0, cutoffs)}
                 onClick={() => setSelected(cell.date)}
               />
             ))}
@@ -150,23 +153,24 @@ export function CalendarView({
 
 function DayCell({
   cell,
-  amount,
+  flow,
   intensity,
   onClick,
 }: {
   cell: CalendarCell;
-  amount: number;
+  flow: DailyFlow;
   intensity: ReturnType<typeof intensityOf>;
   onClick: () => void;
 }) {
   const background = intensityColor(intensity);
+  const dark = intensity >= 3;
 
   return (
     <button
       type="button"
       onClick={onClick}
       /* 터치 영역 최소 44px */
-      className={`flex min-h-14 flex-col items-center justify-start gap-0.5 rounded-lg py-1.5 active:bg-slate-100 ${
+      className={`flex min-h-14 flex-col items-center justify-start gap-px rounded-lg py-1.5 active:bg-slate-100 ${
         cell.inMonth ? '' : 'opacity-35'
       }`}
       style={background ? { backgroundColor: background } : undefined}
@@ -175,7 +179,7 @@ function DayCell({
         className={`flex size-5 items-center justify-center rounded-full text-[11px] ${
           cell.isToday
             ? 'bg-slate-900 font-semibold text-white'
-            : intensity >= 3
+            : dark
               ? 'font-medium text-white'
               : cell.weekday === 0
                 ? 'text-red-500'
@@ -188,13 +192,24 @@ function DayCell({
       </span>
 
       {/* 색만으로 읽게 하지 않는다 — 금액을 같이 적는다 */}
-      {amount > 0 && (
+      {flow.expense > 0 && (
         <span
           className={`text-[9px] leading-tight tabular-nums ${
-            intensity >= 3 ? 'text-white' : 'text-slate-500'
+            dark ? 'text-white' : 'text-slate-600'
           }`}
         >
-          {formatKrwCompact(amount)}
+          {formatKrwCompact(flow.expense)}
+        </span>
+      )}
+
+      {/* 수입만 있는 날이 빈 칸처럼 보이지 않게 한다 */}
+      {flow.income > 0 && (
+        <span
+          className={`text-[9px] leading-tight tabular-nums ${
+            dark ? 'text-blue-100' : 'text-blue-600'
+          }`}
+        >
+          +{formatKrwCompact(flow.income)}
         </span>
       )}
     </button>
