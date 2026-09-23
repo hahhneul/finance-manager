@@ -1,5 +1,7 @@
 # 머니로그
 
+**https://finance-manager-hahhneul.vercel.app**
+
 한국 대학생·사회초년생을 위한 직접 입력형 가계부 + 자산 추적 웹앱.
 은행 연동 없이 손으로 기록하고, 보유 주식은 수량·가격으로 평가액을 계산해 순자산에 포함한다.
 데이터는 전부 브라우저 안(IndexedDB)에만 있고 서버로 나가지 않는다.
@@ -261,6 +263,11 @@ git push -u origin main
 ```
 
 **vercel.com** → GitHub 로그인 → **Add New Project** → 저장소 선택 → **Deploy**.
+
+> **Settings → Deployment Protection → Vercel Authentication 을 꺼야 한다.**
+> 켜져 있으면 Vercel 에 로그인한 브라우저만 접속되는데, 폰은 로그인돼 있지 않아
+> 홈 화면에 추가해도 매번 로그인 화면이 뜨고 서비스워커도 등록되지 않는다.
+> 이 앱은 기록이 각자 브라우저에만 있어서, 주소를 알아도 남의 가계부는 보이지 않는다.
 Vite 를 자동 감지한다 (빌드 `npm run build`, 출력 `dist`).
 이후로는 `git push` 만 하면 자동 배포된다.
 
