@@ -1,0 +1,65 @@
+/*
+ * 웹폰트는 npm 패키지에서 가져와 번들에 포함한다 (CDN 사용 안 함).
+ * 빌드하면 woff2 파일이 dist/assets 로 복사되고 경로도 자동으로 맞춰진다.
+ * → 비행기 모드에서도 글꼴이 깨지지 않는다.
+ *
+ * 다만 가변 폰트가 약 2MB 라서 첫 방문에 한 번 내려받는다.
+ * 용량이 부담되면 아래 @import 한 줄을 지우면 된다.
+ * 그러면 --font-sans 의 두 번째 후보(기기 기본 한글 글꼴)로 자동으로 넘어간다.
+ */
+@import 'pretendard/dist/web/variable/pretendardvariable.css';
+@import 'tailwindcss';
+
+@theme {
+  --font-sans: 'Pretendard Variable', -apple-system, BlinkMacSystemFont, 'Apple SD Gothic Neo',
+    'Malgun Gothic', system-ui, sans-serif;
+}
+
+/* 아이폰 노치·홈바 영역. 레이아웃 컴포넌트에서 골라 쓴다 */
+@utility pt-safe {
+  padding-top: env(safe-area-inset-top);
+}
+@utility pb-safe {
+  padding-bottom: env(safe-area-inset-bottom);
+}
+@utility pl-safe {
+  padding-left: env(safe-area-inset-left);
+}
+@utility pr-safe {
+  padding-right: env(safe-area-inset-right);
+}
+/* 하단 탭 바용 — 홈바 높이만큼 더 띄운다 */
+@utility mb-safe {
+  margin-bottom: env(safe-area-inset-bottom);
+}
+
+:root {
+  color-scheme: light;
+}
+
+html,
+body,
+#root {
+  height: 100%;
+}
+
+body {
+  margin: 0;
+  background-color: var(--color-slate-100);
+  color: var(--color-slate-900);
+  /* 숫자 열이 흔들리지 않게 고정폭 숫자를 쓴다 */
+  font-variant-numeric: tabular-nums;
+  -webkit-font-smoothing: antialiased;
+}
+
+/* 모바일에서 입력창을 탭할 때 화면이 확대되지 않게 (iOS 는 16px 미만이면 확대한다) */
+input,
+select,
+textarea {
+  font-size: 16px;
+}
+
+/* 터치 기기에서 탭 시 나타나는 회색 하이라이트 제거 */
+* {
+  -webkit-tap-highlight-color: transparent;
+}

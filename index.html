@@ -1,0 +1,29 @@
+<!doctype html>
+<html lang="ko">
+  <head>
+    <meta charset="UTF-8" />
+
+    <!-- 모바일 우선: 확대 허용(접근성), 노치/홈바 영역까지 화면 사용 -->
+    <meta
+      name="viewport"
+      content="width=device-width, initial-scale=1.0, viewport-fit=cover"
+    />
+
+    <!-- 8단계 PWA 전환 시 manifest 가 이 값들을 그대로 이어받는다 -->
+    <meta name="theme-color" content="#0f172a" />
+    <meta name="description" content="직접 입력하는 개인 가계부 · 자산 추적" />
+
+    <!-- iOS 홈 화면 추가 대응 -->
+    <meta name="apple-mobile-web-app-capable" content="yes" />
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
+    <meta name="apple-mobile-web-app-title" content="머니로그" />
+    <link rel="apple-touch-icon" href="./icons/icon-192.png" />
+
+    <link rel="icon" type="image/svg+xml" href="./favicon.svg" />
+    <title>머니로그</title>
+  </head>
+  <body>
+    <div id="root"></div>
+    <script type="module" src="/src/main.tsx"></script>
+  </body>
+</html>
