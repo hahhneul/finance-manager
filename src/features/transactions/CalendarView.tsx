@@ -2,14 +2,16 @@ import { useMemo, useState } from 'react';
 import { BottomSheet } from '@/components/BottomSheet';
 import {
   buildMonthGrid,
+  dayNet,
   expenseCutoffs,
   intensityOf,
   type CalendarCell,
+  type DayNet,
 } from '@/core/calendar';
-import { intensityColor } from '@/core/chartColors';
-import { dailyFlows, groupRowsByDate, ledgerRows, type DailyFlow } from '@/core/transactions';
+import { dayColor } from '@/core/chartColors';
+import { dailyFlows, groupRowsByDate, ledgerRows } from '@/core/transactions';
 import { formatKoreanDate, todayISO, weekdayKo } from '@/core/date';
-import { formatKrw, formatKrwCompact } from '@/core/money';
+import { formatKrw, formatKrwNumber } from '@/core/money';
 import { categoryPath } from '@/core/recent';
 import type { Account, Category, ISODate, Ledger, YearMonth } from '@/types';
 
@@ -38,9 +40,10 @@ export function CalendarView({
 
   const byDate = useMemo(() => dailyFlows(ledger, month), [ledger, month]);
 
-  // 칸 색의 농도는 지출 기준으로만 잡는다 (수입은 글자로 구분한다)
+  // 하루의 '수입 − 지출' 크기를 기준으로 농도를 나눈다.
+  // 지출만 기준으로 하면 월급날처럼 큰 수입이 있는 날의 색이 옅어진다.
   const cutoffs = useMemo(
-    () => expenseCutoffs([...byDate.values()].map((f) => f.expense)),
+    () => expenseCutoffs([...byDate.values()].map((f) => dayNet(f).magnitude)),
     [byDate],
   );
 
@@ -66,14 +69,19 @@ export function CalendarView({
           ))}
         </div>
 
+        <p className="px-1 pb-1.5 text-[10px] text-slate-400">
+          <span className="font-medium text-red-500">빨강</span> 지출이 더 많은 날 ·{' '}
+          <span className="font-medium text-blue-500">파랑</span> 수입이 더 많은 날
+        </p>
+
         {weeks.map((week) => (
           <div key={week[0].date} className="grid grid-cols-7 gap-0.5">
             {week.map((cell) => (
               <DayCell
                 key={cell.date}
                 cell={cell}
-                flow={byDate.get(cell.date) ?? { income: 0, expense: 0 }}
-                intensity={intensityOf(byDate.get(cell.date)?.expense ?? 0, cutoffs)}
+                net={dayNet(byDate.get(cell.date) ?? { income: 0, expense: 0 })}
+                cutoffs={cutoffs}
                 onClick={() => setSelected(cell.date)}
               />
             ))}
@@ -153,16 +161,17 @@ export function CalendarView({
 
 function DayCell({
   cell,
-  flow,
-  intensity,
+  net,
+  cutoffs,
   onClick,
 }: {
   cell: CalendarCell;
-  flow: DailyFlow;
-  intensity: ReturnType<typeof intensityOf>;
+  net: DayNet;
+  cutoffs: [number, number, number];
   onClick: () => void;
 }) {
-  const background = intensityColor(intensity);
+  const intensity = intensityOf(net.magnitude, cutoffs);
+  const background = dayColor(net.direction, intensity);
   const dark = intensity >= 3;
 
   return (
@@ -170,7 +179,7 @@ function DayCell({
       type="button"
       onClick={onClick}
       /* 터치 영역 최소 44px */
-      className={`flex min-h-14 flex-col items-center justify-start gap-px rounded-lg py-1.5 active:bg-slate-100 ${
+      className={`flex min-h-14 flex-col items-center justify-start gap-0.5 rounded-lg px-0.5 py-1.5 active:bg-slate-100 ${
         cell.inMonth ? '' : 'opacity-35'
       }`}
       style={background ? { backgroundColor: background } : undefined}
@@ -191,25 +200,23 @@ function DayCell({
         {Number(cell.date.slice(8, 10))}
       </span>
 
-      {/* 색만으로 읽게 하지 않는다 — 금액을 같이 적는다 */}
-      {flow.expense > 0 && (
+      {/*
+        축약하지 않고 실제 금액을 적는다.
+        색이 방향(지출/수입)을, 숫자가 크기를 담당한다 — 색만으로 읽게 하지 않는다.
+      */}
+      {!net.empty && (
         <span
-          className={`text-[9px] leading-tight tabular-nums ${
-            dark ? 'text-white' : 'text-slate-600'
+          className={`w-full truncate text-center text-[9px] leading-tight tabular-nums ${
+            dark
+              ? 'text-white'
+              : net.direction === 'spent'
+                ? 'text-red-700'
+                : net.direction === 'earned'
+                  ? 'text-blue-700'
+                  : 'text-slate-500'
           }`}
         >
-          {formatKrwCompact(flow.expense)}
-        </span>
-      )}
-
-      {/* 수입만 있는 날이 빈 칸처럼 보이지 않게 한다 */}
-      {flow.income > 0 && (
-        <span
-          className={`text-[9px] leading-tight tabular-nums ${
-            dark ? 'text-blue-100' : 'text-blue-600'
-          }`}
-        >
-          +{formatKrwCompact(flow.income)}
+          {formatKrwNumber(net.magnitude)}
         </span>
       )}
     </button>

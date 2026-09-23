@@ -102,14 +102,34 @@ describe('달력 뷰', () => {
     expect(screen.queryByPlaceholderText('메모·태그 검색')).not.toBeInTheDocument();
   });
 
-  it('지출이 있는 날은 금액이 같이 적힌다 (색에만 의존하지 않는다)', async () => {
+  it('금액을 줄이지 않고 숫자 그대로 적는다', async () => {
     const user = userEvent.setup();
     renderIn(<TransactionList />);
     await screen.findByText('내역');
     await user.click(screen.getByRole('button', { name: '달력으로 보기' }));
 
-    // 9월 1일 월세 500,000 → '50만'
-    expect(await screen.findByText('50만')).toBeInTheDocument();
+    // 9월 1일: 월세 500,000 지출뿐 → 순액 500,000
+    expect(await screen.findByText('500,000')).toBeInTheDocument();
+  });
+
+  it('수입이 더 많은 날도 표시한다', async () => {
+    const user = userEvent.setup();
+    renderIn(<TransactionList />);
+    await screen.findByText('내역');
+    await user.click(screen.getByRole('button', { name: '달력으로 보기' }));
+
+    // 9월 5일: 용돈 300,000 수입만 → 순액 300,000 (파랑 쪽)
+    expect(await screen.findByText('300,000')).toBeInTheDocument();
+  });
+
+  it('색이 무슨 뜻인지 글자로도 적는다', async () => {
+    const user = userEvent.setup();
+    renderIn(<TransactionList />);
+    await screen.findByText('내역');
+    await user.click(screen.getByRole('button', { name: '달력으로 보기' }));
+
+    expect(await screen.findByText(/지출이 더 많은 날/)).toBeInTheDocument();
+    expect(screen.getByText(/수입이 더 많은 날/)).toBeInTheDocument();
   });
 
   it('날짜를 누르면 그날 거래가 나온다', async () => {
@@ -119,9 +139,7 @@ describe('달력 뷰', () => {
     await user.click(screen.getByRole('button', { name: '달력으로 보기' }));
 
     // 9월 13일 = 정산 '치킨 모임'
-    const cell = screen.getByText('50만').closest('div')!;
-    expect(cell).toBeTruthy();
-
+    await screen.findByText('500,000');
     const dayButton = screen.getAllByRole('button').find((b) => b.textContent?.startsWith('13'));
     await user.click(dayButton!);
 

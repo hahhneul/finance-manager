@@ -1,6 +1,14 @@
 import { describe, expect, it } from 'vitest';
-import { buildMonthGrid, expenseCutoffs, intensityOf, weekdayIndex } from '../calendar';
-import { intensityColor, categoryColorMap, CATEGORICAL } from '../chartColors';
+import { buildMonthGrid, dayNet, expenseCutoffs, intensityOf, weekdayIndex } from '../calendar';
+import {
+  CATEGORICAL,
+  SEQUENTIAL_BLUE,
+  SEQUENTIAL_RED,
+  categoryColorMap,
+  dayColor,
+  intensityColor,
+} from '../chartColors';
+import { formatKrwNumber } from '../money';
 import { dailyExpenseTotals } from '../transactions';
 import { demoCategories, demoLedger } from '@/demo/demoData';
 
@@ -126,5 +134,71 @@ describe('카테고리 색', () => {
     const income = categoryColorMap(demoCategories, 'income');
     expect(income.get('cat-salary')).toBe(CATEGORICAL[0]);
     expect(income.get('cat-food')).toBeUndefined();
+  });
+});
+
+describe('하루의 방향과 크기', () => {
+  it('지출이 많으면 빨강 쪽', () => {
+    // 월세 낸 날: 지출 500,000, 수입 0
+    expect(dayNet({ income: 0, expense: 500_000 })).toEqual({
+      direction: 'spent', magnitude: 500_000, empty: false,
+    });
+  });
+
+  it('수입이 많으면 파랑 쪽', () => {
+    // 월급날: 수입 2,000,000, 지출 0
+    expect(dayNet({ income: 2_000_000, expense: 0 })).toEqual({
+      direction: 'earned', magnitude: 2_000_000, empty: false,
+    });
+  });
+
+  it('둘 다 있으면 차이만 남는다', () => {
+    // 용돈 300,000 받고 5,500 쓴 날
+    expect(dayNet({ income: 300_000, expense: 5_500 })).toEqual({
+      direction: 'earned', magnitude: 294_500, empty: false,
+    });
+  });
+
+  it('같으면 어느 쪽도 아니다', () => {
+    expect(dayNet({ income: 50_000, expense: 50_000 })).toEqual({
+      direction: 'even', magnitude: 0, empty: false,
+    });
+  });
+
+  it('기록이 없는 날은 비어 있다고 알려준다', () => {
+    expect(dayNet({ income: 0, expense: 0 }).empty).toBe(true);
+  });
+});
+
+describe('방향별 칸 색', () => {
+  it('지출이 많은 날은 빨강 계열', () => {
+    expect(dayColor('spent', 1)).toBe(SEQUENTIAL_RED[0]);
+    expect(dayColor('spent', 4)).toBe(SEQUENTIAL_RED[3]);
+  });
+
+  it('수입이 많은 날은 파랑 계열', () => {
+    expect(dayColor('earned', 1)).toBe(SEQUENTIAL_BLUE[0]);
+    expect(dayColor('earned', 4)).toBe(SEQUENTIAL_BLUE[3]);
+  });
+
+  it('기록이 없거나 수입=지출이면 칠하지 않는다', () => {
+    expect(dayColor('spent', 0)).toBeUndefined();
+    expect(dayColor('even', 3)).toBeUndefined();
+  });
+
+  it('빨강과 파랑은 같은 단계 수를 갖는다', () => {
+    expect(SEQUENTIAL_RED).toHaveLength(SEQUENTIAL_BLUE.length);
+  });
+});
+
+describe('숫자 그대로 표시', () => {
+  it('만 단위로 줄이지 않는다', () => {
+    expect(formatKrwNumber(38_000)).toBe('38,000');
+    expect(formatKrwNumber(500_000)).toBe('500,000');
+    expect(formatKrwNumber(2_000_000)).toBe('2,000,000');
+  });
+
+  it('부호 없이 크기만', () => {
+    expect(formatKrwNumber(-38_000)).toBe('38,000');
   });
 });

@@ -29,9 +29,17 @@ export const MAX_DONUT_SLICES = 6;
 
 /**
  * 크기 비교용 파랑 한 색 (옅음 → 진함).
- * 달력의 지출 농도가 이걸 쓴다.
+ * 수입이 지출보다 많은 날에 쓴다.
  */
 export const SEQUENTIAL_BLUE = ['#cde2fb', '#9ec5f4', '#5598e7', '#2a78d6'] as const;
+
+/**
+ * 같은 구조의 빨강 한 색. 지출이 수입보다 많은 날에 쓴다.
+ *
+ * 파랑↔빨강은 '양쪽으로 갈리는 값'에 쓰는 짝이다.
+ * 여기서는 하루의 수입−지출이 0을 기준으로 어느 쪽인지를 나타낸다.
+ */
+export const SEQUENTIAL_RED = ['#fbdcdc', '#f4b0b0', '#e57373', '#d03b3b'] as const;
 
 /** 강조하지 않는 막대의 색 */
 export const MUTED_BAR = '#d7d6d1';
@@ -64,7 +72,22 @@ export function categoryColorMap(categories: Category[], flow: FlowKind): Map<ID
   return map;
 }
 
-/** 달력 칸 배경. 0이면 칠하지 않는다 */
+/** 하루의 방향. 지출이 더 많으면 'spent', 수입이 더 많으면 'earned' */
+export type DayDirection = 'spent' | 'earned' | 'even';
+
+/**
+ * 달력 칸 배경.
+ *
+ * 지출이 많은 날은 빨강, 수입이 많은 날은 파랑.
+ * 진하기는 금액 크기를 나타낸다. 0이면 칠하지 않는다.
+ */
+export function dayColor(direction: DayDirection, intensity: Intensity): string | undefined {
+  if (intensity === 0 || direction === 'even') return undefined;
+  const ramp = direction === 'spent' ? SEQUENTIAL_RED : SEQUENTIAL_BLUE;
+  return ramp[intensity - 1];
+}
+
+/** 예전 이름 유지 (파랑 단색이 필요한 곳) */
 export function intensityColor(intensity: Intensity): string | undefined {
   return intensity === 0 ? undefined : SEQUENTIAL_BLUE[intensity - 1];
 }

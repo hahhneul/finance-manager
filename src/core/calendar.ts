@@ -82,3 +82,29 @@ export function intensityOf(amount: Krw, cutoffs: [Krw, Krw, Krw]): Intensity {
   if (amount <= cutoffs[2]) return 3;
   return 4;
 }
+
+/**
+ * 하루의 방향과 크기.
+ *
+ * 수입과 지출을 따로 보여주면 칸이 좁아 읽기 어렵다.
+ * 그래서 **둘의 차이 하나**만 보여주고, 어느 쪽이 큰지는 색으로 나타낸다.
+ */
+export interface DayNet {
+  /** 지출이 많으면 'spent', 수입이 많으면 'earned', 같으면 'even' */
+  direction: 'spent' | 'earned' | 'even';
+  /** 차이의 크기 (항상 0 이상) */
+  magnitude: Krw;
+  /** 그날 아무 기록이 없었는가 */
+  empty: boolean;
+}
+
+export function dayNet(flow: { income: Krw; expense: Krw }): DayNet {
+  const net = flow.income - flow.expense;
+  const empty = flow.income === 0 && flow.expense === 0;
+
+  return {
+    direction: net < 0 ? 'spent' : net > 0 ? 'earned' : 'even',
+    magnitude: Math.abs(net),
+    empty,
+  };
+}

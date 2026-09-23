@@ -32,6 +32,14 @@ export function formatKrwSigned(value: Krw): string {
   return `${sign}${krwFormatter.format(value)}원`;
 }
 
+/**
+ * 단위 없이 숫자만. 38000 → '38,000'
+ * 달력처럼 칸이 좁아도 축약하지 않고 실제 금액을 보여야 할 때 쓴다.
+ */
+export function formatKrwNumber(value: Krw): string {
+  return krwFormatter.format(Math.abs(value));
+}
+
 /** 부호 없이 금액만. 신용카드 "갚을 돈" 처럼 부호를 따로 설명할 때 */
 export function formatKrwAbs(value: Krw): string {
   return `${krwFormatter.format(Math.abs(value))}원`;
